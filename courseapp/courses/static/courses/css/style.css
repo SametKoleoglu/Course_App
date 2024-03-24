@@ -1,0 +1,10 @@
+.errorlist{
+    list-style-type: none;
+    color: red;
+    padding: 0;
+    margin: 0;
+}
+
+.invalid input, .invalid textarea{
+    border-color: #dc3545;
+}

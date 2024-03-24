@@ -1,0 +1,21 @@
+{% load static %}
+
+<div class="card mb-3 h-auto">
+  <div class="row">
+    <div class="col-4">
+  <img src="{{course.image.url}}" class="card-img-top" alt="{{course.title}}" />
+</div>
+<div class="col-8">
+  <div class="card-body">
+    <h5 class="card-title">
+      <a href="{% url "course_details" course.slug %}">
+        {{course.title}}
+      </a>
+    </h5>
+    <p class="card-text">{{course.subtitle|truncatechars:15}}</p>
+    <h4>{{course.category.name|safe}}</h4>
+    <p>{{course.date|date:'d F D'}}</p>
+  </div>
+</div>
+</div>
+</div>

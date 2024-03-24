@@ -1,0 +1,143 @@
+import os
+from django.shortcuts import get_object_or_404, redirect, render
+from courses.forms import CourseEdit, CourseForm, UploadForm
+from .models import Course, Category, Slider, UploadModel
+from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required,user_passes_test
+
+
+# forms
+# GET => url => querystring
+# POST => form => body
+
+
+def index(request):
+    # list comphension
+    courses = Course.objects.filter(isActive=1, isHome=True)
+    categories = Category.objects.all()
+    sliders = Slider.objects.filter(isActive=True)
+
+    # for course in db["courses"]:
+    #     if course["isActive"] == False:
+    #         courses.append(course)
+
+    return render(request, "courses/index.html", {
+        "categories": categories,
+        "courses": courses,
+        "sliders": sliders
+    })
+
+
+def search(request):
+    if 'q' in request.GET and request.GET['q'] != '':
+
+        courses = Course.objects.filter(
+            isActive=1, title__contains=request.GET['q']).order_by("-date")
+        categories = Category.objects.all()
+    else:
+        return redirect('/courses')
+
+    return render(request, "courses/search.html", {
+        "categories": categories,
+        "courses": courses,
+    })
+
+
+def details(request, slug):
+    # try:
+    #     course = Course.objects.get(pk=course_id)
+    # except:
+    #     raise Http404()
+
+    course = get_object_or_404(Course, slug=slug)
+
+    context = {
+        "course": course
+    }
+
+    return render(request, "courses/details.html", context)
+
+
+def getCoursesByCategory(request, slug):
+    courses = Course.objects.filter(
+        categories__slug=slug, isActive=1).order_by("-date")
+    categories = Category.objects.all()
+
+    paginator = Paginator(courses, 2)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.page(page_number)
+
+    return render(request, "courses/list.html", {
+        "categories": categories,
+        "page_obj": page_obj,
+        "selectCategory": slug
+    })
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def create_course(request):
+    if request.method == "POST":
+        form = CourseForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            form.save()
+            return redirect("/courses")
+
+    else:
+        form = CourseForm()
+    return render(request, "courses/create-course.html", {
+        "form": form
+    })
+
+
+@login_required()
+def course_list(request):
+    courses = Course.objects.all()
+    return render(request, "courses/course-list.html", {
+        "courses": courses
+    })
+
+
+def course_edit(request, id):
+    course = get_object_or_404(Course, pk=id)
+
+    if request.method == "POST":
+        form = CourseEdit(request.POST, request.FILES, instance=course)
+        form.save()
+        return redirect("course_list")
+
+    else:
+        form = CourseEdit(instance=course)
+
+    form = CourseEdit(instance=course)
+    return render(request, "courses/edit-course.html", {
+        "form": form
+    })
+
+
+def course_delete(request, id):
+    course = get_object_or_404(Course, pk=id)
+
+    if request.method == "POST":
+        course.delete()
+        return redirect("course_list")
+
+    return render(request, "courses/course-delete.html", {
+        "course": course
+    })
+
+
+def upload(request):
+    if request.method == "POST":
+        form = UploadForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            model = UploadModel(image=request.FILES['image'])
+            model.save()
+            return render(request, "courses/success.html")
+    else:
+        form = UploadForm()
+
+    return render(request, "courses/upload.html", {
+        "form": form
+    })
